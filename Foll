@@ -1,0 +1,1027 @@
+```html
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ShiftFlow Pro - Turnos Ciclo Continuo PWA</title>
+    <!-- PWA Primary Meta Tags -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ShiftFlow Pro">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090d16',
+                        cardBg: '#131b2e',
+                        cardBorder: '#1e293b',
+                        shiftMorning: '#10b981', // Green
+                        shiftAfternoon: '#f97316', // Orange
+                        shiftNight: '#0f172a', // Black / Very Dark
+                        shiftRest: '#334155', // Muted dark blue
+                        accentBlue: '#3b82f6',
+                        accentEmerald: '#10b981',
+                        accentAmber: '#f59e0b',
+                        accentRose: '#f43f5e',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Inter & FontAwesome icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090d16;
+            color: #f8fafc;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .glow-blue { box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.25); }
+        .glow-emerald { box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25); }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Specific Shift Color Badges & Card Styles */
+        .badge-morning { background-color: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; }
+        .badge-afternoon { background-color: rgba(249, 115, 22, 0.2); border: 1px solid rgba(249, 115, 22, 0.4); color: #fb923c; }
+        .badge-night { background-color: rgba(15, 23, 42, 0.9); border: 1px solid rgba(100, 116, 139, 0.5); color: #cbd5e1; }
+        .badge-rest { background-color: rgba(51, 65, 85, 0.4); border: 1px solid rgba(51, 65, 85, 0.6); color: #94a3b8; }
+
+        .cell-morning { background-color: #064e3b; border-color: #10b981; color: #a7f3d0; }
+        .cell-afternoon { background-color: #7c2d12; border-color: #f97316; color: #ffedd5; }
+        .cell-night { background-color: #090d16; border-color: #475569; color: #f1f5f9; }
+        .cell-rest { background-color: #1e293b; border-color: #334155; color: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen pb-20 text-slate-100 flex flex-col items-center selection:bg-accentBlue selection:text-white">
+
+    <header class="w-full max-w-lg px-5 pt-6 pb-4 flex justify-between items-center border-b border-cardBorder/80 sticky top-0 z-40 bg-darkBg/90 backdrop-blur-md">
+        <div>
+            <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                <i class="fa-solid fa-arrows-spin text-accentBlue animate-spin-slow"></i> ShiftFlow <span class="text-xs bg-accentBlue/20 text-accentBlue px-2 py-0.5 rounded-md border border-accentBlue/30">PRO</span>
+            </h1>
+            <p id="uiSubHeader" class="text-xs text-slate-400">Ciclo Continuo h24/7D</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <!-- Language Selector Button -->
+            <button onclick="toggleLangDropdown()" id="langBtn" class="h-10 px-3 rounded-xl bg-cardBg border border-cardBorder text-xs font-bold text-slate-200 hover:text-white flex items-center gap-1.5 transition active:scale-95">
+                <i class="fa-solid fa-globe text-accentBlue"></i> <span id="currentLangLabel">ES</span>
+            </button>
+            
+            <!-- Install PWA App Button -->
+            <button id="pwaInstallBtn" onclick="installPWA()" class="hidden h-10 px-3 rounded-xl bg-accentEmerald/20 border border-accentEmerald/40 text-xs font-bold text-accentEmerald hover:bg-accentEmerald/30 transition flex items-center gap-1.5 animate-bounce">
+                <i class="fa-solid fa-download"></i> <span id="uiInstallText">Instalar</span>
+            </button>
+
+            <!-- Notifications Toggle -->
+            <button onclick="requestNotificationPermission()" id="notifBtn" class="w-10 h-10 rounded-xl bg-cardBg border border-cardBorder flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95">
+                <i class="fa-solid fa-bell"></i>
+            </button>
+
+            <!-- Settings -->
+            <button onclick="openSettingsModal()" class="w-10 h-10 rounded-xl bg-cardBg border border-cardBorder flex items-center justify-center text-slate-300 hover:text-white transition active:scale-95">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Language Dropdown Menu -->
+    <div id="langDropdown" class="fixed top-16 right-5 z-50 hidden bg-cardBg border border-cardBorder rounded-2xl shadow-2xl overflow-hidden flex flex-col w-36">
+        <button onclick="setLanguage('es')" class="px-4 py-2.5 text-xs text-left hover:bg-slate-800 text-slate-200 font-medium flex items-center justify-between">
+            🇪🇸 Español <i id="checkEs" class="fa-solid fa-check text-accentBlue"></i>
+        </button>
+        <button onclick="setLanguage('it')" class="px-4 py-2.5 text-xs text-left hover:bg-slate-800 text-slate-200 font-medium flex items-center justify-between">
+            🇮🇹 Italiano <i id="checkIt" class="fa-solid fa-check text-accentBlue hidden"></i>
+        </button>
+        <button onclick="setLanguage('en')" class="px-4 py-2.5 text-xs text-left hover:bg-slate-800 text-slate-200 font-medium flex items-center justify-between">
+            🇬🇧 English <i id="checkEn" class="fa-solid fa-check text-accentBlue hidden"></i>
+        </button>
+    </div>
+
+    <main class="w-full max-w-lg px-4 mt-4 space-y-5 flex-1">
+
+        <!-- 8-Hour Shift Live Dashboard -->
+        <section class="bg-cardBg border border-cardBorder rounded-3xl p-6 relative overflow-hidden glow-blue">
+            <div class="flex justify-between items-center mb-3">
+                <span id="shiftStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-accentBlue border border-blue-500/30 flex items-center gap-1.5">
+                    <span id="shiftStatusDot" class="w-2 h-2 rounded-full bg-accentBlue"></span> <span id="uiStatusText">Inactivo</span>
+                </span>
+                <span id="currentShiftBadge" class="text-xs font-semibold px-2.5 py-1 rounded-lg border">Turno Hoy: --</span>
+            </div>
+
+            <div class="text-center my-4">
+                <span id="uiMainTimerLabel" class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Tiempo Restante Turno (8h)</span>
+                <div id="mainTimer" class="text-5xl font-black tracking-tight text-white my-2 font-mono">08:00:00</div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <button onclick="toggleShift()" id="shiftActionBtn" class="py-3.5 px-4 rounded-2xl bg-accentBlue hover:bg-blue-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95">
+                    <i id="shiftActionIcon" class="fa-solid fa-play"></i> <span id="uiStartShiftText">Iniciar Turno</span>
+                </button>
+                <button onclick="openGeoModal()" id="geoBtn" class="py-3.5 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition flex items-center justify-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-location-crosshairs text-accentBlue"></i> <span id="uiGeoLocationText">GPS Lavoro</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 30-Minute Break Tracker Card -->
+        <section class="bg-cardBg border border-cardBorder rounded-3xl p-5 relative overflow-hidden">
+            <div class="flex justify-between items-center mb-3">
+                <h2 id="uiBreakTitle" class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-mug-hot text-accentAmber"></i> Pausa Turno (30 Minutos)
+                </h2>
+                <span id="breakStatus" class="text-xs text-slate-400 font-medium">Disponible</span>
+            </div>
+
+            <div class="flex items-center justify-between bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl">
+                <div>
+                    <div id="breakTimer" class="text-2xl font-mono font-black text-accentAmber">30:00</div>
+                    <p id="uiBreakNotice" class="text-[11px] text-slate-400 mt-0.5">Notificación a los 20 min (quedan 10 min)</p>
+                </div>
+                <button onclick="toggleBreak()" id="breakActionBtn" disabled class="py-3 px-5 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs transition cursor-not-allowed flex items-center gap-2 active:scale-95">
+                    <i id="breakActionIcon" class="fa-solid fa-play"></i> <span id="uiStartBreakText">Iniciar Pausa</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Colored Full Monthly Calendar & Notes Section -->
+        <section class="bg-cardBg border border-cardBorder rounded-3xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 id="uiCalendarTitle" class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-accentEmerald"></i> Calendario Mensual a Color
+                    </h2>
+                    <p id="uiCalendarSubtitle" class="text-[11px] text-slate-400">Toca cualquier día para añadir notas o eventos</p>
+                </div>
+                <button onclick="openSettingsModal()" class="text-xs text-accentBlue hover:underline font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-pen-to-square"></i> <span id="uiEditPatternText">Configurar</span>
+                </button>
+            </div>
+
+            <!-- Color Legend -->
+            <div class="grid grid-cols-4 gap-1.5 text-[10px] text-center font-bold">
+                <div class="py-1 px-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span id="legMorning">Mañana</span>
+                </div>
+                <div class="py-1 px-1 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-400 flex items-center justify-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-orange-500"></span> <span id="legAfternoon">Tarde</span>
+                </div>
+                <div class="py-1 px-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-slate-400"></span> <span id="legNight">Noche</span>
+                </div>
+                <div class="py-1 px-1 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400 flex items-center justify-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-slate-600"></span> <span id="legRest">Descanso</span>
+                </div>
+            </div>
+
+            <!-- Calendar Month Selector Header -->
+            <div class="flex justify-between items-center bg-slate-900/90 border border-slate-800 p-2.5 rounded-2xl">
+                <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div id="calendarMonthLabel" class="text-xs font-black uppercase tracking-wider text-white">-- 2026</div>
+                <button onclick="changeMonth(1)" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Calendar Days Header (Mon-Sun) -->
+            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase">
+                <div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div class="text-accentAmber">Sá</div><div class="text-accentAmber">Do</div>
+            </div>
+
+            <!-- Full Monthly Grid Container -->
+            <div id="monthlyGrid" class="grid grid-cols-7 gap-1.5">
+                <!-- Rendered dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Settings & Pattern Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-cardBorder rounded-3xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto glow-blue">
+            <div class="flex justify-between items-center border-b border-cardBorder pb-3">
+                <h3 id="uiConfigModalTitle" class="font-bold text-base text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-accentBlue"></i> Configuración de Turnos
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label id="uiStartDateLabel" class="block text-xs font-semibold text-slate-300 mb-1">Fecha de Inicio del Ciclo</label>
+                    <input type="date" id="configStartDate" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accentBlue font-medium">
+                </div>
+
+                <!-- SELECT STARTING SHIFT OPTION -->
+                <div>
+                    <label id="uiStartShiftSelectLabel" class="block text-xs font-semibold text-slate-300 mb-1">¿Con qué turno inicia en esa fecha?</label>
+                    <select id="configStartShiftIndex" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accentBlue font-medium">
+                        <!-- Populated dynamically based on pattern -->
+                    </select>
+                </div>
+
+                <div>
+                    <label id="uiPatternLabel" class="block text-xs font-semibold text-slate-300 mb-1">Patrón de Ciclo (separado por comas)</label>
+                    <input type="text" id="configPattern" value="Mañana, Mañana, Noche, Noche, Descanso, Descanso, Tarde, Tarde, Descanso" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accentBlue font-medium">
+                    <p id="uiPatternHelp" class="text-[11px] text-slate-400 mt-1">2 Mañanas, 2 Noches, 2 Descansos, 2 Tardes, 1 Descanso.</p>
+                </div>
+
+                <div>
+                    <label id="uiAdvanceNotifLabel" class="block text-xs font-semibold text-slate-300 mb-1">Pre-aviso fin de turno (minutos antes)</label>
+                    <input type="number" id="configAdvanceMin" value="20" min="5" max="60" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accentBlue font-medium">
+                </div>
+            </div>
+
+            <button onclick="saveSettings()" id="uiSaveBtn" class="w-full py-3.5 bg-accentBlue hover:bg-blue-600 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/20 active:scale-95">
+                Guardar y Aplicar
+            </button>
+        </div>
+    </div>
+
+    <!-- Daily Note/Event Modal -->
+    <div id="noteModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-cardBorder rounded-3xl w-full max-w-md p-6 space-y-4 glow-emerald">
+            <div class="flex justify-between items-center border-b border-cardBorder pb-3">
+                <div>
+                    <h3 id="noteModalDate" class="font-bold text-base text-white">--</h3>
+                    <p id="noteModalShift" class="text-xs text-accentEmerald font-semibold">Turno: --</p>
+                </div>
+                <button onclick="closeNoteModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <div>
+                <label id="uiNoteLabel" class="block text-xs font-semibold text-slate-300 mb-1">Nota, Evento, Curso o Feriado</label>
+                <textarea id="noteInput" rows="4" placeholder="Ej. Curso de formación de 09:00 a 13:00 / Día Feriado / Vacaciones" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accentEmerald font-medium resize-none"></textarea>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="deleteNote()" id="uiDeleteNoteBtn" class="py-3 px-4 bg-rose-600/20 text-rose-400 border border-rose-500/30 font-bold rounded-xl text-xs hover:bg-rose-600/30 transition">
+                    Eliminar
+                </button>
+                <button onclick="saveNote()" id="uiSaveNoteBtn" class="flex-1 py-3 bg-accentEmerald hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20 active:scale-95">
+                    Guardar Nota
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Geolocation Modal -->
+    <div id="geoModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cardBg border border-cardBorder rounded-3xl w-full max-w-md p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-cardBorder pb-3">
+                <h3 id="uiGeoModalTitle" class="font-bold text-base text-white flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-accentEmerald"></i> Geofencing GPS Lavoro
+                </h3>
+                <button onclick="closeGeoModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <p id="uiGeoDescription" class="text-xs text-slate-400 leading-relaxed">Guarda las coordenadas de tu empresa. Al llegar dentro del radio, se iniciará el turno automáticamente con notificación.</p>
+
+            <div class="space-y-3">
+                <button onclick="detectCurrentLocation()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-crosshairs text-accentBlue"></i> <span id="uiDetectGpsText">Obtener mi Ubicación GPS</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Latitud</label>
+                        <input type="text" id="geoLat" placeholder="45.4642" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accentEmerald font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Longitud</label>
+                        <input type="text" id="geoLon" placeholder="9.1900" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accentEmerald font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label id="uiRadiusLabel" class="block text-xs font-semibold text-slate-400 mb-1">Radio de detección (metros)</label>
+                    <input type="number" id="geoRadius" value="150" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-accentEmerald font-medium">
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="stopGeofencing()" id="uiDisableGeoBtn" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition">
+                    Desactivar
+                </button>
+                <button onclick="startGeofencing()" id="uiEnableGeoBtn" class="flex-1 py-3 bg-accentEmerald hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20 active:scale-95">
+                    Activar Geofencing
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Translations (i18n) ---
+        const i18n = {
+            es: {
+                subHeader: "Ciclo Continuo h24/7D",
+                install: "Instalar",
+                statusInactive: "Inactivo",
+                statusActive: "Turno en Curso (8h)",
+                statusPaused: "En Pausa",
+                todayShift: "Turno Hoy:",
+                mainTimerLabel: "Tiempo Restante Turno (8h)",
+                startShift: "Iniciar Turno",
+                pauseShift: "Pausar Turno",
+                resumeShift: "Reanudar",
+                geoLocation: "GPS Lavoro",
+                breakTitle: "Pausa Turno (30 Minutos)",
+                breakAvailable: "Disponible",
+                breakRunning: "En curso...",
+                breakFinished: "Completada",
+                breakNotice: "Aviso a los 20 min (quedan 10 min)",
+                startBreak: "Iniciar Pausa",
+                endBreak: "Finalizar Pausa",
+                calendarTitle: "Calendario Mensual a Color",
+                calendarSubtitle: "Toca cualquier día para añadir notas o eventos",
+                legMorning: "Mañana",
+                legAfternoon: "Tarde",
+                legNight: "Noche",
+                legRest: "Descanso",
+                editPattern: "Configurar",
+                configTitle: "Configuración de Turnos",
+                startDateLabel: "Fecha de Inicio del Ciclo",
+                startShiftSelectLabel: "¿Con qué turno inicia en esa fecha?",
+                patternLabel: "Patrón de Ciclo (separado por comas)",
+                patternHelp: "Ej. Mañana, Mañana, Noche, Noche, Descanso, Descanso, Tarde, Tarde, Descanso",
+                advanceNotifLabel: "Pre-avviso fin de turno (minutos antes)",
+                saveBtn: "Guardar y Aplicar",
+                geoTitle: "Geofencing GPS Lavoro",
+                geoDesc: "Guarda las coordenadas de tu empresa. Al llegar dentro del radio, se iniciará el turno automáticamente.",
+                detectGps: "Obtener mi Ubicación GPS",
+                radiusLabel: "Radio de detección (metros)",
+                disableGeo: "Desactivar",
+                enableGeo: "Activar Geofencing",
+                noteLabel: "Nota, Evento, Curso o Feriado",
+                deleteBtn: "Eliminar",
+                saveNoteBtn: "Guardar Nota",
+                notifTurnStart: "¡Bienvenido! Has llegado a tu trabajo. Turno de 8 horas iniciado.",
+                notifShiftAdvance: "¡Atención! Quedan {min} minutos para finalizar tu turno.",
+                notifShiftFinished: "¡Turno Completado! Tu jornada de 8 horas ha finalizado.",
+                notifBreakWarning: "¡Atención Pausa! Te quedan 10 minutos para finalizar tu pausa.",
+                notifBreakFinished: "¡Pausa Finalizada! Es hora de volver al turno."
+            },
+            it: {
+                subHeader: "Ciclo Continuo h24/7D",
+                install: "Installa",
+                statusInactive: "Inattivo",
+                statusActive: "Turno in Corso (8h)",
+                statusPaused: "In Pausa",
+                todayShift: "Turno Oggi:",
+                mainTimerLabel: "Tempo Rimasto Turno (8h)",
+                startShift: "Inizia Turno",
+                pauseShift: "Pausa Turno",
+                resumeShift: "Riprendi",
+                geoLocation: "GPS Lavoro",
+                breakTitle: "Pausa Turno (30 Minuti)",
+                breakAvailable: "Disponibile",
+                breakRunning: "In corso...",
+                breakFinished: "Completata",
+                breakNotice: "Avviso ai 20 min (rimangono 10 min)",
+                startBreak: "Inizia Pausa",
+                endBreak: "Termina Pausa",
+                calendarTitle: "Calendario Mensile a Colori",
+                calendarSubtitle: "Tocca qualsiasi giorno per aggiungere note o eventi",
+                legMorning: "Mattina",
+                legAfternoon: "Pomeriggio",
+                legNight: "Notte",
+                legRest: "Riposo",
+                editPattern: "Configura",
+                configTitle: "Configurazione Turni",
+                startDateLabel: "Data Inizio del Ciclo",
+                startShiftSelectLabel: "Con quale turno inizia in quella data?",
+                patternLabel: "Schema Ciclo (separato da virgole)",
+                patternHelp: "Es. Mattina, Mattina, Notte, Notte, Riposo, Riposo, Pomeriggio, Pomeriggio, Riposo",
+                advanceNotifLabel: "Pre-avviso fine turno (minuti prima)",
+                saveBtn: "Salva e Applica",
+                geoTitle: "Geofencing GPS Lavoro",
+                geoDesc: "Salva le coordinate della tua azienda. All'arrivo nel raggio stabilito, il turno si avvierà automaticamente.",
+                detectGps: "Ottieni la mia Posizione GPS",
+                radiusLabel: "Raggio di rilevamento (metri)",
+                disableGeo: "Disattiva",
+                enableGeo: "Attiva Geofencing",
+                noteLabel: "Nota, Evento, Corso o Festivo",
+                deleteBtn: "Elimina",
+                saveNoteBtn: "Salva Nota",
+                notifTurnStart: "Benvenuto! Sei arrivato al lavoro. Turno di 8 ore avviato.",
+                notifShiftAdvance: "Attenzione! Mancano {min} minuti alla fine del turno.",
+                notifShiftFinished: "Turno Completato! La tua giornata lavorativa è terminata.",
+                notifBreakWarning: "Attenzione Pausa! Ti rimangono 10 minuti prima che finisca la pausa.",
+                notifBreakFinished: "Pausa Finita! È ora di riprendere il turno."
+            },
+            en: {
+                subHeader: "24/7 Continuous Cycle",
+                install: "Install",
+                statusInactive: "Inactive",
+                statusActive: "Shift Running (8h)",
+                statusPaused: "Paused",
+                todayShift: "Today's Shift:",
+                mainTimerLabel: "Shift Time Remaining (8h)",
+                startShift: "Start Shift",
+                pauseShift: "Pause Shift",
+                resumeShift: "Resume",
+                geoLocation: "Work GPS",
+                breakTitle: "Shift Break (30 Minutes)",
+                breakAvailable: "Available",
+                breakRunning: "Running...",
+                breakFinished: "Completed",
+                breakNotice: "Alert at 20 min (10 min remaining)",
+                startBreak: "Start Break",
+                endBreak: "End Break",
+                calendarTitle: "Colored Monthly Calendar",
+                calendarSubtitle: "Tap any day to add notes or events",
+                legMorning: "Morning",
+                legAfternoon: "Afternoon",
+                legNight: "Night",
+                legRest: "Rest",
+                editPattern: "Configure",
+                configTitle: "Shift Configuration",
+                startDateLabel: "Cycle Start Date",
+                startShiftSelectLabel: "Which shift starts on that date?",
+                patternLabel: "Cycle Pattern (comma separated)",
+                patternHelp: "Ex. Morning, Morning, Night, Night, Rest, Rest, Afternoon, Afternoon, Rest",
+                advanceNotifLabel: "Shift end pre-notice (minutes before)",
+                saveBtn: "Save & Apply",
+                geoTitle: "Workplace Geofencing GPS",
+                geoDesc: "Save your workplace coordinates. Upon arrival within the radius, the shift starts automatically.",
+                detectGps: "Get My GPS Location",
+                radiusLabel: "Detection Radius (meters)",
+                disableGeo: "Disable",
+                enableGeo: "Enable Geofencing",
+                noteLabel: "Note, Event, Course or Holiday",
+                deleteBtn: "Delete",
+                saveNoteBtn: "Save Note",
+                notifTurnStart: "Welcome! You arrived at work. 8-hour shift started.",
+                notifShiftAdvance: "Attention! {min} minutes left before your shift ends.",
+                notifShiftFinished: "Shift Completed! Your 8-hour workday is over.",
+                notifBreakWarning: "Break Warning! You have 10 minutes left in your break.",
+                notifBreakFinished: "Break Ended! Time to resume your shift."
+            }
+        };
+
+        // --- App Global State ---
+        let state = {
+            lang: localStorage.getItem('sf_lang') || 'es',
+            startDate: localStorage.getItem('sf_startDate') || new Date().toISOString().split('T')[0],
+            startIndex: parseInt(localStorage.getItem('sf_startIndex')) || 0, // Offset for chosen shift
+            pattern: JSON.parse(localStorage.getItem('sf_pattern')) || [
+                "Mañana", "Mañana", "Noche", "Noche", "Descanso", "Descanso", "Tarde", "Tarde", "Descanso"
+            ],
+            advanceMin: parseInt(localStorage.getItem('sf_advance')) || 20,
+            geo: JSON.parse(localStorage.getItem('sf_geo')) || { lat: null, lon: null, radius: 150, active: false },
+            notes: JSON.parse(localStorage.getItem('sf_notes')) || {}, // Key format YYYY-MM-DD
+            
+            // Timers
+            shiftDuration: 8 * 3600,
+            shiftTimeLeft: 8 * 3600,
+            shiftRunning: false,
+            
+            breakDuration: 30 * 60,
+            breakTimeLeft: 30 * 60,
+            breakRunning: false,
+            
+            notifiedShiftAdvance: false,
+            notifiedBreakWarning: false,
+            currentDisplayMonth: new Date()
+        };
+
+        let shiftInterval = null;
+        let breakInterval = null;
+        let geoWatchId = null;
+        let deferredPwaPrompt = null;
+        let activeNoteDateKey = null;
+
+        // --- DOM Ready Setup ---
+        window.addEventListener('DOMContentLoaded', () => {
+            applyLanguageUI();
+            setupPWAEngine();
+
+            document.getElementById('configStartDate').value = state.startDate;
+            document.getElementById('configPattern').value = state.pattern.join(', ');
+            document.getElementById('configAdvanceMin').value = state.advanceMin;
+            
+            populateStartShiftSelector();
+
+            if(state.geo.lat) {
+                document.getElementById('geoLat').value = state.geo.lat;
+                document.getElementById('geoLon').value = state.geo.lon;
+                document.getElementById('geoRadius').value = state.geo.radius;
+            }
+
+            renderMonthlyCalendar();
+            updateTodayShiftDisplay();
+        });
+
+        function populateStartShiftSelector() {
+            const select = document.getElementById('configStartShiftIndex');
+            select.innerHTML = '';
+            state.pattern.forEach((shift, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = `Posición ${idx + 1}: ${shift}`;
+                if (idx === state.startIndex) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        // --- PWA Engine Setup ---
+        function setupPWAEngine() {
+            const manifestObj = {
+                name: "ShiftFlow Pro - Turnos Ciclo Continuo",
+                short_name: "ShiftFlow",
+                description: "Gestión de turnos a ciclo continuo h24 7 días con calendario de colores y notas",
+                start_url: "./",
+                display: "standalone",
+                background_color: "#090d16",
+                theme_color: "#0f172a",
+                icons: [
+                    { src: "https://placehold.co/192x192/10b981/ffffff?text=ShiftFlow", sizes: "192x192", type: "image/png" },
+                    { src: "https://placehold.co/512x512/10b981/ffffff?text=ShiftFlow", sizes: "512x512", type: "image/png" }
+                ]
+            };
+
+            const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = URL.createObjectURL(manifestBlob);
+            document.head.appendChild(manifestLink);
+
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('install', e => self.skipWaiting());
+                    self.addEventListener('activate', e => self.clients.claim());
+                    self.addEventListener('fetch', e => {});
+                `;
+                const swBlob = new Blob([swCode], { type: 'text/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(err => console.log(err));
+            }
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPwaPrompt = e;
+                document.getElementById('pwaInstallBtn').classList.remove('hidden');
+            });
+        }
+
+        function installPWA() {
+            if (deferredPwaPrompt) {
+                deferredPwaPrompt.prompt();
+                deferredPwaPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('pwaInstallBtn').classList.add('hidden');
+                    }
+                    deferredPwaPrompt = null;
+                });
+            }
+        }
+
+        // --- Internationalization (i18n) ---
+        function toggleLangDropdown() { document.getElementById('langDropdown').classList.toggle('hidden'); }
+
+        function setLanguage(langKey) {
+            state.lang = langKey;
+            localStorage.setItem('sf_lang', langKey);
+            document.getElementById('langDropdown').classList.add('hidden');
+            
+            document.getElementById('checkEs').classList.toggle('hidden', langKey !== 'es');
+            document.getElementById('checkIt').classList.toggle('hidden', langKey !== 'it');
+            document.getElementById('checkEn').classList.toggle('hidden', langKey !== 'en');
+            
+            document.getElementById('currentLangLabel').textContent = langKey.toUpperCase();
+            applyLanguageUI();
+            renderMonthlyCalendar();
+            updateTodayShiftDisplay();
+        }
+
+        function applyLanguageUI() {
+            const t = i18n[state.lang];
+            document.getElementById('uiSubHeader').textContent = t.subHeader;
+            document.getElementById('uiInstallText').textContent = t.install;
+            document.getElementById('uiMainTimerLabel').textContent = t.mainTimerLabel;
+            document.getElementById('uiGeoLocationText').textContent = t.geoLocation;
+            document.getElementById('uiBreakTitle').innerHTML = `<i class="fa-solid fa-mug-hot text-accentAmber"></i> ${t.breakTitle}`;
+            document.getElementById('uiBreakNotice').textContent = t.breakNotice;
+            document.getElementById('uiCalendarTitle').innerHTML = `<i class="fa-solid fa-calendar-days text-accentEmerald"></i> ${t.calendarTitle}`;
+            document.getElementById('uiCalendarSubtitle').textContent = t.calendarSubtitle;
+            document.getElementById('legMorning').textContent = t.legMorning;
+            document.getElementById('legAfternoon').textContent = t.legAfternoon;
+            document.getElementById('legNight').textContent = t.legNight;
+            document.getElementById('legRest').textContent = t.legRest;
+            document.getElementById('uiEditPatternText').textContent = t.editPattern;
+            document.getElementById('uiConfigModalTitle').innerHTML = `<i class="fa-solid fa-sliders text-accentBlue"></i> ${t.configTitle}`;
+            document.getElementById('uiStartDateLabel').textContent = t.startDateLabel;
+            document.getElementById('uiStartShiftSelectLabel').textContent = t.startShiftSelectLabel;
+            document.getElementById('uiPatternLabel').textContent = t.patternLabel;
+            document.getElementById('uiPatternHelp').textContent = t.patternHelp;
+            document.getElementById('uiAdvanceNotifLabel').textContent = t.advanceNotifLabel;
+            document.getElementById('uiSaveBtn').textContent = t.saveBtn;
+            document.getElementById('uiGeoModalTitle').innerHTML = `<i class="fa-solid fa-location-dot text-accentEmerald"></i> ${t.geoTitle}`;
+            document.getElementById('uiGeoDescription').textContent = t.geoDesc;
+            document.getElementById('uiDetectGpsText').textContent = t.detectGps;
+            document.getElementById('uiRadiusLabel').textContent = t.radiusLabel;
+            document.getElementById('uiDisableGeoBtn').textContent = t.disableGeo;
+            document.getElementById('uiEnableGeoBtn').textContent = t.enableGeo;
+            document.getElementById('uiNoteLabel').textContent = t.noteLabel;
+            document.getElementById('uiDeleteNoteBtn').textContent = t.deleteBtn;
+            document.getElementById('uiSaveNoteBtn').textContent = t.saveNoteBtn;
+
+            if(!state.shiftRunning) {
+                document.getElementById('uiStartShiftText').textContent = t.startShift;
+                document.getElementById('uiStatusText').textContent = t.statusInactive;
+            }
+        }
+
+        // --- Continuous Shift Calculation with Starting Offset ---
+        function getShiftInfoForDate(targetDate) {
+            const start = new Date(state.startDate);
+            const target = new Date(targetDate);
+            start.setHours(0,0,0,0);
+            target.setHours(0,0,0,0);
+            
+            const diffTime = target - start;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            const patternLength = state.pattern.length;
+            // Calculate index with offset
+            let rawIndex = (diffDays + state.startIndex) % patternLength;
+            if (rawIndex < 0) rawIndex += patternLength;
+            
+            const shiftName = state.pattern[rawIndex];
+            const lower = shiftName.toLowerCase();
+
+            // Color Categorization
+            let category = "rest"; // default
+            if (lower.includes("mañana") || lower.includes("mattina") || lower.includes("morn")) {
+                category = "morning";
+            } else if (lower.includes("tarde") || lower.includes("pomeriggio") || lower.includes("aft")) {
+                category = "afternoon";
+            } else if (lower.includes("noche") || lower.includes("notte") || lower.includes("night")) {
+                category = "night";
+            }
+
+            return { name: shiftName, category, index: rawIndex };
+        }
+
+        function updateTodayShiftDisplay() {
+            const today = new Date();
+            const shiftInfo = getShiftInfoForDate(today);
+            const t = i18n[state.lang];
+            
+            const badge = document.getElementById('currentShiftBadge');
+            badge.textContent = `${t.todayShift} ${shiftInfo.name}`;
+
+            if(shiftInfo.category === 'morning') badge.className = "text-xs font-semibold px-2.5 py-1 rounded-lg badge-morning";
+            else if(shiftInfo.category === 'afternoon') badge.className = "text-xs font-semibold px-2.5 py-1 rounded-lg badge-afternoon";
+            else if(shiftInfo.category === 'night') badge.className = "text-xs font-semibold px-2.5 py-1 rounded-lg badge-night";
+            else badge.className = "text-xs font-semibold px-2.5 py-1 rounded-lg badge-rest";
+        }
+
+        // --- Full Colored Monthly Calendar Grid ---
+        function changeMonth(delta) {
+            state.currentDisplayMonth.setMonth(state.currentDisplayMonth.getMonth() + delta);
+            renderMonthlyCalendar();
+        }
+
+        function renderMonthlyCalendar() {
+            const grid = document.getElementById('monthlyGrid');
+            grid.innerHTML = '';
+
+            const year = state.currentDisplayMonth.getFullYear();
+            const month = state.currentDisplayMonth.getMonth();
+
+            // Month Label
+            const monthName = state.currentDisplayMonth.toLocaleDateString(state.lang, { month: 'long', year: 'numeric' });
+            document.getElementById('calendarMonthLabel').textContent = monthName;
+
+            // First day of month & Days in month
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            // Adjust to Monday = 0
+            let startingDay = firstDay.getDay() - 1;
+            if (startingDay === -1) startingDay = 6;
+
+            const totalDays = lastDay.getDate();
+
+            // Render Empty Padding Cells
+            for (let i = 0; i < startingDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "h-14 rounded-xl bg-slate-900/30 border border-slate-900/50";
+                grid.appendChild(emptyCell);
+            }
+
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            // Render Actual Month Days
+            for (let day = 1; day <= totalDays; day++) {
+                const currentObj = new Date(year, month, day);
+                const dateKey = currentObj.toISOString().split('T')[0];
+                const shiftInfo = getShiftInfoForDate(currentObj);
+
+                let cellClass = "cell-rest";
+                if(shiftInfo.category === 'morning') cellClass = "cell-morning";
+                else if(shiftInfo.category === 'afternoon') cellClass = "cell-afternoon";
+                else if(shiftInfo.category === 'night') cellClass = "cell-night";
+
+                const isToday = (dateKey === todayStr);
+                const hasNote = Boolean(state.notes[dateKey]);
+
+                const dayCell = document.createElement('div');
+                dayCell.className = `h-14 p-1 rounded-xl border flex flex-col justify-between cursor-pointer transition active:scale-95 relative overflow-hidden ${cellClass} ${isToday ? 'ring-2 ring-accentBlue font-black' : ''}`;
+                dayCell.onclick = () => openNoteModal(dateKey, currentObj, shiftInfo);
+
+                dayCell.innerHTML = `
+                    <div class="flex justify-between items-center text-[10px] font-black">
+                        <span>${day}</span>
+                        ${hasNote ? '<span class="w-2 h-2 rounded-full bg-accentAmber animate-ping"></span><span class="w-2 h-2 rounded-full bg-accentAmber absolute top-1 right-1"></span>' : ''}
+                    </div>
+                    <div class="text-[9px] font-bold tracking-tight truncate leading-tight">${shiftInfo.name}</div>
+                    ${hasNote ? `<div class="text-[8px] truncate text-amber-300 font-semibold"><i class="fa-solid fa-sticky-note"></i> ${state.notes[dateKey]}</div>` : '<div></div>'}
+                `;
+                grid.appendChild(dayCell);
+            }
+        }
+
+        // --- Note/Event Modal Functions ---
+        function openNoteModal(dateKey, dateObj, shiftInfo) {
+            activeNoteDateKey = dateKey;
+            const formattedDate = dateObj.toLocaleDateString(state.lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            
+            document.getElementById('noteModalDate').textContent = formattedDate;
+            document.getElementById('noteModalShift').textContent = `Turno: ${shiftInfo.name}`;
+            document.getElementById('noteInput').value = state.notes[dateKey] || '';
+
+            document.getElementById('noteModal').classList.remove('hidden');
+        }
+
+        function closeNoteModal() {
+            document.getElementById('noteModal').classList.add('hidden');
+            activeNoteDateKey = null;
+        }
+
+        function saveNote() {
+            if(!activeNoteDateKey) return;
+            const text = document.getElementById('noteInput').value.trim();
+            if(text) {
+                state.notes[activeNoteDateKey] = text;
+            } else {
+                delete state.notes[activeNoteDateKey];
+            }
+            localStorage.setItem('sf_notes', JSON.stringify(state.notes));
+            closeNoteModal();
+            renderMonthlyCalendar();
+        }
+
+        function deleteNote() {
+            if(!activeNoteDateKey) return;
+            delete state.notes[activeNoteDateKey];
+            localStorage.setItem('sf_notes', JSON.stringify(state.notes));
+            closeNoteModal();
+            renderMonthlyCalendar();
+        }
+
+        // --- Notification Dispatcher ---
+        function requestNotificationPermission() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        sendNotification("ShiftFlow Pro", i18n[state.lang].subHeader);
+                    }
+                });
+            }
+        }
+
+        function sendNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification(title, {
+                            body: body,
+                            icon: 'https://placehold.co/192x192/10b981/ffffff?text=SF',
+                            badge: 'https://placehold.co/96x96/10b981/ffffff?text=SF',
+                            vibrate: [200, 100, 200]
+                        });
+                    });
+                } catch(e) {
+                    new Notification(title, { body });
+                }
+            }
+        }
+
+        // --- Timers (8h Shift & 30m Break) ---
+        function toggleShift() {
+            const t = i18n[state.lang];
+            if (!state.shiftRunning) {
+                state.shiftRunning = true;
+                document.getElementById('uiStartShiftText').textContent = t.pauseShift;
+                document.getElementById('shiftActionIcon').className = "fa-solid fa-pause";
+                
+                const badge = document.getElementById('shiftStatusBadge');
+                document.getElementById('uiStatusText').textContent = t.statusActive;
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-accentEmerald border border-emerald-500/30 flex items-center gap-1.5";
+                document.getElementById('shiftStatusDot').className = "w-2 h-2 rounded-full bg-accentEmerald animate-pulse";
+
+                const breakBtn = document.getElementById('breakActionBtn');
+                breakBtn.disabled = false;
+                breakBtn.className = "py-3 px-5 rounded-xl bg-accentAmber hover:bg-amber-600 text-white font-bold text-xs transition flex items-center gap-2 shadow-md shadow-amber-500/20 active:scale-95";
+                document.getElementById('breakStatus').textContent = t.breakAvailable;
+
+                shiftInterval = setInterval(() => {
+                    if (state.shiftTimeLeft > 0) {
+                        state.shiftTimeLeft--;
+                        updateTimerDisplay('mainTimer', state.shiftTimeLeft);
+
+                        const advanceSecs = state.advanceMin * 60;
+                        if (state.shiftTimeLeft === advanceSecs && !state.notifiedShiftAdvance) {
+                            state.notifiedShiftAdvance = true;
+                            sendNotification("ShiftFlow Pro", t.notifShiftAdvance.replace('{min}', state.advanceMin));
+                        }
+                    } else {
+                        clearInterval(shiftInterval);
+                        state.shiftRunning = false;
+                        sendNotification("ShiftFlow Pro", t.notifShiftFinished);
+                        resetShiftUI();
+                    }
+                }, 1000);
+            } else {
+                state.shiftRunning = false;
+                clearInterval(shiftInterval);
+                document.getElementById('uiStartShiftText').textContent = t.resumeShift;
+                document.getElementById('shiftActionIcon').className = "fa-solid fa-play";
+                document.getElementById('uiStatusText').textContent = t.statusPaused;
+            }
+        }
+
+        function resetShiftUI() {
+            state.shiftTimeLeft = state.shiftDuration;
+            updateTimerDisplay('mainTimer', state.shiftTimeLeft);
+            const t = i18n[state.lang];
+            document.getElementById('uiStartShiftText').textContent = t.startShift;
+            document.getElementById('shiftActionIcon').className = "fa-solid fa-play";
+            
+            const badge = document.getElementById('shiftStatusBadge');
+            document.getElementById('uiStatusText').textContent = t.statusInactive;
+            badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-accentBlue border border-blue-500/30 flex items-center gap-1.5";
+            document.getElementById('shiftStatusDot').className = "w-2 h-2 rounded-full bg-accentBlue";
+        }
+
+        function toggleBreak() {
+            const t = i18n[state.lang];
+            if (!state.breakRunning) {
+                state.breakRunning = true;
+                const bBtn = document.getElementById('breakActionBtn');
+                document.getElementById('uiStartBreakText').textContent = t.endBreak;
+                document.getElementById('breakActionIcon').className = "fa-solid fa-stop";
+                bBtn.className = "py-3 px-5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-md shadow-rose-500/20 active:scale-95";
+                document.getElementById('breakStatus').textContent = t.breakRunning;
+
+                breakInterval = setInterval(() => {
+                    if (state.breakTimeLeft > 0) {
+                        state.breakTimeLeft--;
+                        updateTimerDisplay('breakTimer', state.breakTimeLeft);
+
+                        // Trigger alert when 10 minutes remain
+                        if (state.breakTimeLeft === 10 * 60 && !state.notifiedBreakWarning) {
+                            state.notifiedBreakWarning = true;
+                            sendNotification("Pausa - ShiftFlow Pro", t.notifBreakWarning);
+                        }
+                    } else {
+                        clearInterval(breakInterval);
+                        state.breakRunning = false;
+                        sendNotification("Pausa - ShiftFlow Pro", t.notifBreakFinished);
+                        resetBreakUI();
+                    }
+                }, 1000);
+            } else {
+                clearInterval(breakInterval);
+                state.breakRunning = false;
+                resetBreakUI();
+            }
+        }
+
+        function resetBreakUI() {
+            state.breakTimeLeft = state.breakDuration;
+            state.notifiedBreakWarning = false;
+            updateTimerDisplay('breakTimer', state.breakTimeLeft);
+            const t = i18n[state.lang];
+            document.getElementById('uiStartBreakText').textContent = t.startBreak;
+            document.getElementById('breakActionIcon').className = "fa-solid fa-play";
+            const bBtn = document.getElementById('breakActionBtn');
+            bBtn.className = "py-3 px-5 rounded-xl bg-accentAmber hover:bg-amber-600 text-white font-bold text-xs transition flex items-center gap-2 shadow-md shadow-amber-500/20 active:scale-95";
+            document.getElementById('breakStatus').textContent = t.breakFinished;
+        }
+
+        function updateTimerDisplay(elementId, totalSeconds) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            document.getElementById(elementId).textContent = 
+                String(h).padStart(2, '0') + ":" + 
+                String(m).padStart(2, '0') + ":" + 
+                String(s).padStart(2, '0');
+        }
+
+        // --- Geofencing GPS ---
+        function detectCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    document.getElementById('geoLat').value = pos.coords.latitude.toFixed(6);
+                    document.getElementById('geoLon').value = pos.coords.longitude.toFixed(6);
+                    sendNotification("GPS ShiftFlow", "Ubicación detectada.");
+                }, err => alert("GPS Error: " + err.message), { enableHighAccuracy: true });
+            }
+        }
+
+        function startGeofencing() {
+            const lat = parseFloat(document.getElementById('geoLat').value);
+            const lon = parseFloat(document.getElementById('geoLon').value);
+            const radius = parseFloat(document.getElementById('geoRadius').value) || 150;
+
+            if (isNaN(lat) || isNaN(lon)) return alert("Coordenadas no válidas.");
+
+            state.geo = { lat, lon, radius, active: true };
+            localStorage.setItem('sf_geo', JSON.stringify(state.geo));
+            closeGeoModal();
+
+            if (navigator.geolocation) {
+                geoWatchId = navigator.geolocation.watchPosition(pos => {
+                    const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, lat, lon);
+                    if (dist <= radius && !state.shiftRunning) {
+                        sendNotification("Arrivo al Lavoro", i18n[state.lang].notifTurnStart);
+                        toggleShift();
+                    }
+                }, err => console.error(err), { enableHighAccuracy: true });
+            }
+        }
+
+        function stopGeofencing() {
+            if (geoWatchId !== null && navigator.geolocation) {
+                navigator.geolocation.clearWatch(geoWatchId);
+                geoWatchId = null;
+            }
+            state.geo.active = false;
+            localStorage.setItem('sf_geo', JSON.stringify(state.geo));
+            closeGeoModal();
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const dLat = (lat2-lat1) * Math.PI/180;
+            const dLon = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // --- Modals Control & Settings Persistence ---
+        function openSettingsModal() { 
+            populateStartShiftSelector();
+            document.getElementById('settingsModal').classList.remove('hidden'); 
+        }
+        function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+
+        function openGeoModal() { document.getElementById('geoModal').classList.remove('hidden'); }
+        function closeGeoModal() { document.getElementById('geoModal').classList.add('hidden'); }
+
+        function saveSettings() {
+            const sDate = document.getElementById('configStartDate').value;
+            const sIdx = parseInt(document.getElementById('configStartShiftIndex').value) || 0;
+            const patternStr = document.getElementById('configPattern').value;
+            const adv = parseInt(document.getElementById('configAdvanceMin').value) || 20;
+
+            if (!sDate || !patternStr) return alert("Completa todos los campos.");
+
+            state.startDate = sDate;
+            state.startIndex = sIdx;
+            state.pattern = patternStr.split(',').map(s => s.trim()).filter(Boolean);
+            state.advanceMin = adv;
+
+            localStorage.setItem('sf_startDate', state.startDate);
+            localStorage.setItem('sf_startIndex', state.startIndex);
+            localStorage.setItem('sf_pattern', JSON.stringify(state.pattern));
+            localStorage.setItem('sf_advance', state.advanceMin);
+
+            closeSettingsModal();
+            renderMonthlyCalendar();
+            updateTodayShiftDisplay();
+        }
+    </script>
+</body>
+</html>
+```
